@@ -1,0 +1,72 @@
+version: '3'
+
+networks:
+  laravel-vue-dash:
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx_dash
+    ports:
+      - "8000:80"
+    volumes:
+      - ./src/backend:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+      - mysql
+    networks:
+      - laravel-vue-dash
+
+  mysql:
+    image: mysql:5.7.29
+    container_name: mysql_dash
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: db_dash
+      MYSQL_USER: db_dash
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - laravel-vue-dash
+    volumes:
+      - ./mysql:/var/lib/mysql
+
+  php:
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    container_name: php_dash
+    volumes:
+      - ./src/backend:/var/www/html
+    ports:
+      - "9005:9005"
+    networks:
+      - laravel-vue-dash
+
+  vue:
+    stdin_open: true
+    container_name: vue_dash
+    restart: unless-stopped
+    tty: true
+    build:
+      context: .
+      dockerfile: vue.dockerfile
+    volumes:
+      - /app/node_modules
+      - ./src/frontend:/app:cached
+    networks:
+      - laravel-vue-dash
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+
+
+
